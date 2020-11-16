@@ -14,13 +14,12 @@ import (
 type Parameters struct {
 	Latitude  float64
 	Longitude float64
-	UtcOffset float64
 	Date      time.Time
 }
 
 // Just call the 'general' GetSunriseSunset function and return the results
 func (p *Parameters) GetSunriseSunset() (time.Time, time.Time, error) {
-	return GetSunriseSunset(p.Latitude, p.Longitude, p.UtcOffset, p.Date)
+	return GetSunriseSunset(p.Latitude, p.Longitude, p.Date)
 }
 
 // Convert radians to degrees
@@ -49,9 +48,9 @@ func createSecondsNormalized(seconds int) (vector []float64) {
 // secondsNorm - Seconds normalized calculated by the createSecondsNormalized function
 // utcOffset - UTC offset defined by the user
 // Return Julian day slice
-func calcJulianDay(numDays int64, secondsNorm []float64, utcOffset float64) (julianDay []float64) {
+func calcJulianDay(numDays int64, secondsNorm []float64, utcOffset int) (julianDay []float64) {
 	for index := 0; index < len(secondsNorm); index++ {
-		temp := float64(numDays) + 2415018.5 + secondsNorm[index] - utcOffset/24.0
+		temp := float64(numDays) + 2415018.5 + secondsNorm[index] - float64(utcOffset)/24.0
 		julianDay = append(julianDay, temp)
 	}
 	return
@@ -238,9 +237,9 @@ func calcHaSunrise(latitude float64, sunDeclination []float64) (haSunrise []floa
 // equationOfTime - The Equation of Time slice is calculated by the calcEquationOfTime function
 // utcOffset - The UTC offset is defined by the user
 // Return the Solar Noon slice
-func calcSolarNoon(longitude float64, equationOfTime []float64, utcOffset float64) (solarNoon []float64) {
+func calcSolarNoon(longitude float64, equationOfTime []float64, utcOffset int) (solarNoon []float64) {
 	for index := 0; index < len(equationOfTime); index++ {
-		temp := (720.0 - 4.0*longitude - equationOfTime[index] + utcOffset*60.0) * 60.0
+		temp := (720.0 - 4.0*longitude - equationOfTime[index] + float64(utcOffset)*60.0) * 60.0
 		solarNoon = append(solarNoon, temp)
 	}
 	return
@@ -263,8 +262,8 @@ func checkLongitude(longitude float64) bool {
 }
 
 // Check if the UTC offset is valid. Range: -12 - 14
-func checkUtcOffset(utcOffset float64) bool {
-	if utcOffset < -12.0 || utcOffset > 14.0 {
+func checkUtcOffset(utcOffset int) bool {
+	if utcOffset < -12 || utcOffset > 14 {
 		return false
 	}
 	return true
@@ -322,7 +321,7 @@ func round(value float64) int {
 
 // GetSunriseSunset function is responsible for calculate the apparent Sunrise and Sunset times.
 // If some parameter is wrong it will return an error.
-func GetSunriseSunset(latitude float64, longitude float64, utcOffset float64, date time.Time) (sunrise time.Time, sunset time.Time, err error) {
+func GetSunriseSunset(latitude float64, longitude float64, date time.Time) (sunrise time.Time, sunset time.Time, err error) {
 	// Check latitude
 	if !checkLatitude(latitude) {
 		err = errors.New("Invalid latitude")
@@ -334,6 +333,7 @@ func GetSunriseSunset(latitude float64, longitude float64, utcOffset float64, da
 		return
 	}
 	// Check UTC offset
+	_, utcOffset := date.Zone()
 	if !checkUtcOffset(utcOffset) {
 		err = errors.New("Invalid UTC offset")
 		return
