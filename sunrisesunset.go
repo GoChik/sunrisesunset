@@ -334,6 +334,7 @@ func GetSunriseSunset(latitude float64, longitude float64, date time.Time) (sunr
 	}
 	// Check UTC offset
 	_, utcOffset := date.Zone()
+	utcOffset = utcOffset / (60 * 60)
 	if !checkUtcOffset(utcOffset) {
 		err = errors.New("Invalid UTC offset")
 		return
